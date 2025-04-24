@@ -3,8 +3,8 @@ class Build:
         self.BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost"]
         self.SET_BONUS_LIST = ["gore magala"]
         self.weapon = ""
-        self.buffs = {}
-        self.set_bonuses = {}
+        self.buffs = []
+        self.set_bonuses = []
         self.base_raw = 0
         self.base_crit = 0
         self.buff_raw = 0
@@ -14,28 +14,46 @@ class Build:
     def prompt_build(self):
             self.weapon = input("Which weapon are you using: ")
             self.base_raw = input("What is your base raw attack: ")
-            self.base_crit = input("What is your base crit chance: ")
+            self.base_crit = input("What is your base crit chance percentage: ")
 
             print("For the following skills, enter the level your build contains (0 means you don't have the skill): ")
             for skill in self.BUFF_LIST:
-                self.buffs[skill] = int(input(skill + ": "))
+                self.buffs.append(
+                    Buff(
+                        self.weapon, 
+                        skill, 
+                        int(input(skill + ": "))
+                    )      
+                )
 
             for skill in self.SET_BONUS_LIST:
-                self.set_bonuses[skill] = int(input(skill + ": "))
+                self.set_bonuses.append(
+                    Buff(
+                        self.weapon, 
+                        skill, 
+                        int(input(skill + ": "))
+                    )      
+                )
+
+            print("=============================")
+            for buff in self.buffs:
+                print(buff)
+            print("==============================")
+            for bonus in self.set_bonuses:
+                print(bonus)
 
             return
 
 
 
 class Buff:
-    def __init__(self, weapon, name, level, build_buffs, build_set_bonuses, rawBuff=None, critBuff=None):
+    def __init__(self, weapon, name, level):
         self.weapon = weapon
         self.name = name
         self.level = level
-        self.build_buffs = build_buffs
-        self.build_set_bonuses = build_set_bonuses
-        self.rawBuff = rawBuff
-        self.critBuff = critBuff
+
+    def __str__(self):
+        return f"{self.name}: {self.level}"
 
     def get_buff_stats(skill, level):
         skills = {
