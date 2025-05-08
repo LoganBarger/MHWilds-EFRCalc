@@ -1,10 +1,10 @@
 class Build:
     def __init__(self):
         self.BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost" , "offensive guard"]
-        self.AVG_BUFF_UPTIME_DICT = {"antivirus": 0, "weakness exploit": 1, "maximum might": 1, "latent power": 0, "agitator": .7, "adrenaline Rush": 0, "counterstrike": .5, "burst": 1, "critical boost": 1 , "offensive guard": 1}
+        self.DEFAULT_BUFF_UPTIME_DICT = {"antivirus": 0, "weakness exploit": 1, "maximum might": 1, "latent power": 0, "agitator": .7, "adrenaline Rush": 0, "counterstrike": .5, "burst": 1, "critical boost": 1 , "offensive guard": 1}
             #TODO finish
         self.SET_BONUS_LIST = ["gore magala"]
-        self.AVG_SET_BONUS_UPTIME_DICT = {"gore magala": .8}
+        self.DEFAULT_SET_BONUS_UPTIME_DICT = {"gore magala": .8}
         self.weapon = ""
         self.buffs = []
         self.set_bonuses = []
@@ -19,30 +19,55 @@ class Build:
             self.base_raw = input("What is your base raw attack: ")
             self.base_crit = input("What is your base crit chance percentage: ")
 
-            print("For the following skills, enter the level your build contains (0 means you don't have the skill) and the expected uptime of the skill as a percentage: ")
+            print("For the following skills, enter the level your build contains (leave blank if you don't have the skill) and the expected uptime of the skill as a percentage: ")
             for skill in self.BUFF_LIST:
-                skill_input = int(input(skill + ": "))
+                skill_input = int(input(skill + ": ") or 0)
+                uptime_input = float(input(skill + " uptime (leave blank if using default uptimes): ") or 0)
 
-                if skill_input == 0:
+                if skill_input != 0 and uptime_input == 0:
                     self.buffs.append(
                     Buff(
                         self.weapon, 
                         skill, 
-                        skill_input
+                        skill_input,
+                        self.DEFAULT_BUFF_UPTIME_DICT[skill]
                     )
                 )
+                elif skill_input != 0 and uptime_input != 0:
+                    self.buffs.append(
+                        Buff(
+                            self.weapon,
+                            skill,
+                            skill_input,
+                            uptime_input
+                        )
+                    )
                 
 
             for skill in self.SET_BONUS_LIST:
-                self.set_bonuses.append(
+                skill_input = int(input(skill + ": ") or 0)
+                uptime_input = float(input(skill + " uptime (leave blank if using default uptimes): ") or 0)
+
+                if skill_input != 0 and uptime_input == 0:
+                    self.buffs.append(
                     Buff(
                         self.weapon, 
                         skill, 
-                        int(input(skill + ": "))
-                    )      
+                        skill_input,
+                        self.DEFAULT_SET_BONUS_UPTIME_DICT[skill]
+                    )
                 )
+                elif skill_input != 0 and uptime_input != 0:
+                    self.buffs.append(
+                        Buff(
+                            self.weapon,
+                            skill,
+                            skill_input,
+                            uptime_input
+                        )
+                    )
 
-            print("=============================")
+            print("TO STRING=====================")
             for buff in self.buffs:
                 print(buff)
             print("==============================")
@@ -54,14 +79,14 @@ class Build:
 
 
 class Buff:
-    def __init__(self, weapon, name, level, uptime=1):
+    def __init__(self, weapon, name, level, uptime):
         self.weapon = weapon
         self.name = name
         self.level = level
         self.uptime = uptime
 
     def __str__(self):
-        return f"{self.name}: {self.level}"
+        return f"{self.name}: {self.level}, uptime: {self.uptime}"
 
     def get_buff_stats(skill, level):
         skills = {
@@ -96,7 +121,7 @@ class Buff:
                 4: [16, .10],
                 5: [20, .15]
             },
-            "adrenaline Rush": {
+            "adrenaline rush": {
                 1: [10, 0],
                 2: [15, 0],
                 3: [20, 0],
@@ -121,8 +146,11 @@ class Buff:
                 3: [.15, 0]
             }
         }
+
+        if skill in skills:
+            return skills[skill][level]
         
-    def get_burst_stats(weapon):
+    def get_burst_stats(weapon, level):
         burst_weapons = {
             "great sword": {
                 1: [10, 0],
@@ -163,30 +191,30 @@ class Buff:
 
         match weapon:
             case "great sword":
-                return burst_weapons["great sword"]
+                return burst_weapons["great sword"][level]
             case "hunting horn":
-                return burst_weapons["hunting horn"]
+                return burst_weapons["hunting horn"][level]
             case "dual blades":
-                return burst_weapons["dual blades"]
+                return burst_weapons["dual blades"][level]
             case "light bowgun" | "heavy bowgun" | "bow":
-                return burst_weapons["ranged weapons"]
+                return burst_weapons["ranged weapons"][level]
             case "long sword" | "sword and shield" | "hammer" | "lance" | "gunlance" | "switch axe" | "charge blade" | "insect glaive":
-                return burst_weapons["other weapons"]
+                return burst_weapons["other weapons"][level]
             
     def get_gore_set_stats(level):
         gore_stats = {
-            2: [0, .15],
-            4: {
+            1: [0, .15],
+            2: {
                 1: [10, .15], # pre curing
                 2: [15, .15]  # post curing
             }
         }
 
         match level:
+            case 1:
+                return gore_stats[1]
             case 2:
                 return gore_stats[2]
-            case 4:
-                return gore_stats[4]
             
 build = Build()
 build.prompt_build()
