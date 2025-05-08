@@ -1,7 +1,10 @@
 class Build:
     def __init__(self):
-        self.BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost"]
+        self.BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost" , "offensive guard"]
+        self.AVG_BUFF_UPTIME_DICT = {"antivirus": 0, "weakness exploit": 1, "maximum might": 1, "latent power": 0, "agitator": .7, "adrenaline Rush": 0, "counterstrike": .5, "burst": 1, "critical boost": 1 , "offensive guard": 1}
+            #TODO finish
         self.SET_BONUS_LIST = ["gore magala"]
+        self.AVG_SET_BONUS_UPTIME_DICT = {"gore magala": .8}
         self.weapon = ""
         self.buffs = []
         self.set_bonuses = []
@@ -16,15 +19,19 @@ class Build:
             self.base_raw = input("What is your base raw attack: ")
             self.base_crit = input("What is your base crit chance percentage: ")
 
-            print("For the following skills, enter the level your build contains (0 means you don't have the skill): ")
+            print("For the following skills, enter the level your build contains (0 means you don't have the skill) and the expected uptime of the skill as a percentage: ")
             for skill in self.BUFF_LIST:
-                self.buffs.append(
+                skill_input = int(input(skill + ": "))
+
+                if skill_input == 0:
+                    self.buffs.append(
                     Buff(
                         self.weapon, 
                         skill, 
-                        int(input(skill + ": "))
-                    )      
+                        skill_input
+                    )
                 )
+                
 
             for skill in self.SET_BONUS_LIST:
                 self.set_bonuses.append(
@@ -47,10 +54,11 @@ class Build:
 
 
 class Buff:
-    def __init__(self, weapon, name, level):
+    def __init__(self, weapon, name, level, uptime=1):
         self.weapon = weapon
         self.name = name
         self.level = level
+        self.uptime = uptime
 
     def __str__(self):
         return f"{self.name}: {self.level}"
@@ -106,6 +114,11 @@ class Buff:
                 3: [0, .34],
                 4: [0, .37],
                 5: [0, .40]
+            },
+            "offensive guard": {
+                1: [.05, 0],
+                2: [.10, 0],
+                3: [.15, 0]
             }
         }
         
