@@ -52,10 +52,13 @@ class Build:
         self._base_crit = base_crit
         #TODO add validation
 
+    def find_buff(self, name):
+        return next((buff for buff in self.buffs if buff.name == name), None)
+
     def prompt_build(self):
             self.weapon = input("Which weapon are you using: ")
-            self.base_raw = input("What is your base raw attack: ")
-            self.base_crit = input("What is your base crit chance percentage: ")
+            self.base_raw = int(input("What is your base raw attack: "))
+            self.base_crit = float(input("What is your base crit chance percentage: "))
 
             print("For the following skills, enter the level your build contains (leave blank if you don't have the skill) and the expected uptime of the skill as a percentage: ")
             for skill in self._BUFF_LIST:
@@ -105,25 +108,31 @@ class Build:
                         )
                     )
 
-            #TODO remove once complete
-            print("TO STRING=====================")
-            for buff in self._buffs:
-                print(buff)
-            print("==============================")
-            for bonus in self._set_bonuses:
-                print(bonus)
+            # #TODO remove once complete
+            # print("TO STRING=====================")
+            # for buff in self._buffs:
+            #     print(buff)
+            # print("==============================")
+            # for bonus in self._set_bonuses:
+            #     print(bonus)
 
             return
     
-    def calculate_efr(self, buffs):
+    def calculate_efr(self):
         buff_raw = 0
         buff_crit_chance = 0
         avg_dmg_increase = 0
 
-        for buff in self.buffs:
-            if buff.name == "offensive guard":
-                pass
-        return
+        offensive_guard = self.find_buff("offensive guard")
+        print(offensive_guard.get_buff_stats()[0])
+        if offensive_guard:
+            buff_raw = self.base_raw * (1 + offensive_guard.get_buff_stats()[0])
+
+        # burst = self.find_buff("burst")
+        # if burst:
+        #     buff_raw += 
+
+        return buff_raw
 
 class Buff:
     _SKILLS = {
@@ -255,22 +264,24 @@ class Buff:
     def __str__(self):
         return f"{self.name}: {self.level}, uptime: {self.uptime * 100:.0f}%"
 
-    def get_buff_stats(self, skill, level):
-        if skill in self._SKILLS:
-            return self._SKILLS[skill][level]
+    def get_buff_stats(self):
+        if self.name == "burst":
+            return self.get_burst_stats(self.weapon, self.level)
+        elif self.name in self._SKILLS:
+            return self._SKILLS[self.name][self.level]
         
-    def get_burst_stats(self, weapon, level):
-        match weapon:
+    def get_burst_stats(self):
+        match self.weapon:
             case "great sword":
-                return self._BURST_WEAPONS["great sword"][level]
+                return self._BURST_WEAPONS["great sword"][self.level]
             case "hunting horn": 
-                return self._BURST_WEAPONS["hunting horn"][level]
+                return self._BURST_WEAPONS["hunting horn"][self.level]
             case "dual blades":
-                return self._BURST_WEAPONS["dual blades"][level]
+                return self._BURST_WEAPONS["dual blades"][self.level]
             case "light bowgun" | "heavy bowgun" | "bow":
-                return self._BURST_WEAPONS["ranged weapons"][level]
+                return self._BURST_WEAPONS["ranged weapons"][self.level]
             case "long sword" | "sword and shield" | "hammer" | "lance" | "gunlance" | "switch axe" | "charge blade" | "insect glaive":
-                return self._BURST_WEAPONS["other weapons"][level]
+                return self._BURST_WEAPONS["other weapons"][self.level]
             
     def get_gore_set_stats(self, level):
         match level:
@@ -281,3 +292,4 @@ class Buff:
             
 build = Build()
 build.prompt_build()
+print(f"Effective Raw: {build.calculate_efr()}")
