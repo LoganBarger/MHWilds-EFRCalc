@@ -1,9 +1,9 @@
 class Build:
     _BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost" , "offensive guard"]
-    _DEFAULT_BUFF_UPTIME_DICT = {"antivirus": 0, "weakness exploit": 1, "maximum might": 1, "latent power": 0, "agitator": .7, "adrenaline Rush": 0, "counterstrike": .5, "burst": 1, "critical boost": 1 , "offensive guard": 1}
+    _DEFAULT_BUFF_UPTIME_DICT = {"antivirus": .8, "weakness exploit": 1, "maximum might": 1, "latent power": 0, "agitator": .7, "adrenaline Rush": 0, "counterstrike": .5, "burst": 1, "critical boost": 1 , "offensive guard": 1}
         #TODO finish
-    _SET_BONUS_LIST = ["gore magala"]
-    _DEFAULT_SET_BONUS_UPTIME_DICT = {"gore magala": .8}
+    _SET_BONUS_LIST = ["gore magala's tyranny"]
+    _DEFAULT_SET_BONUS_UPTIME_DICT = {"gore magala's tyranny": .8}
         #TODO check with antivirus
 
     def __init__(self):
@@ -53,7 +53,7 @@ class Build:
         #TODO add validation
 
     def find_buff(self, name):
-        return next((buff for buff in self.buffs if buff.name == name), None)
+        return next((buff for buff in (self.buffs + self.set_bonuses) if buff.name == name), None)
 
     def prompt_build(self):
             self.weapon = input("Which weapon are you using: ")
@@ -119,18 +119,30 @@ class Build:
             return
     
     def calculate_efr(self):
-        buff_raw = 0
+        buff_raw = self.base_raw
         buff_crit_chance = 0
         avg_dmg_increase = 0
 
+        # raw damage buff checks
         offensive_guard = self.find_buff("offensive guard")
-        print(offensive_guard.get_buff_stats()[0])
         if offensive_guard:
-            buff_raw = self.base_raw * (1 + offensive_guard.get_buff_stats()[0])
+            buff_raw *= (1 + (offensive_guard.get_buff_stats()[0] * offensive_guard.uptime))
 
-        # burst = self.find_buff("burst")
-        # if burst:
-        #     buff_raw += 
+        burst = self.find_buff("burst")
+        if burst:
+            buff_raw += (burst.get_buff_stats()[0] * burst.uptime)
+
+        agitator = self.find_buff("agitator")
+        if agitator:
+            buff_raw += (agitator.get_buff_stats()[0] * agitator.uptime)
+
+        gore_set_bonus = self.find_buff("gore magala's tyranny")
+        if gore_set_bonus and gore_set_bonus.level == 2:
+            # gore magala's tyranny buff gives benefits both when uncured and cured. provided uptime is when the player is cleansed, the rest of the time (player is not cleansed) they get less of a buff.
+            buff_raw += (gore_set_bonus.get_buff_stats()[2][0] * gore_set_bonus.uptime) + (gore_set_bonus.get_buff_stats()[1][0] * (1 - gore_set_bonus.uptime))
+
+        # critical chance buff checks
+        # TODO
 
         return buff_raw
 
@@ -266,7 +278,9 @@ class Buff:
 
     def get_buff_stats(self):
         if self.name == "burst":
-            return self.get_burst_stats(self.weapon, self.level)
+            return self.get_burst_stats()
+        elif self.name == "gore magala's tyranny":
+            return self.get_gore_set_stats()
         elif self.name in self._SKILLS:
             return self._SKILLS[self.name][self.level]
         
@@ -283,8 +297,8 @@ class Buff:
             case "long sword" | "sword and shield" | "hammer" | "lance" | "gunlance" | "switch axe" | "charge blade" | "insect glaive":
                 return self._BURST_WEAPONS["other weapons"][self.level]
             
-    def get_gore_set_stats(self, level):
-        match level:
+    def get_gore_set_stats(self):
+        match self.level:
             case 1:
                 return self._GORE_STATS[1]
             case 2:
