@@ -1,6 +1,6 @@
 class Build:
     _BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost" , "offensive guard"]
-    _DEFAULT_BUFF_UPTIME_DICT = {"antivirus": .8, "weakness exploit": 1, "maximum might": 1, "latent power": 0, "agitator": .7, "adrenaline Rush": 0, "counterstrike": .5, "burst": 1, "critical boost": 1 , "offensive guard": 1}
+    _DEFAULT_BUFF_UPTIME_DICT = {"antivirus": .8, "weakness exploit": 1, "maximum might": 1, "latent power": 0, "agitator": .7, "adrenaline Rush": 0, "counterstrike": .6, "burst": 1, "critical boost": 1 , "offensive guard": 1}
         #TODO finish
     _SET_BONUS_LIST = ["gore magala's tyranny"]
     _DEFAULT_SET_BONUS_UPTIME_DICT = {"gore magala's tyranny": .8}
@@ -107,23 +107,13 @@ class Build:
                             uptime_input
                         )
                     )
-
-            # #TODO remove once complete
-            # print("TO STRING=====================")
-            # for buff in self._buffs:
-            #     print(buff)
-            # print("==============================")
-            # for bonus in self._set_bonuses:
-            #     print(bonus)
-
-            return
     
     def calculate_efr(self):
         buff_raw = self.base_raw
-        buff_crit_chance = 0
+        buff_crit = self.base_crit
         avg_dmg_increase = 0
+        efr = 0
 
-        # raw damage buff checks
         offensive_guard = self.find_buff("offensive guard")
         if offensive_guard:
             buff_raw *= (1 + (offensive_guard.get_buff_stats()[0] * offensive_guard.uptime))
@@ -135,16 +125,39 @@ class Build:
         agitator = self.find_buff("agitator")
         if agitator:
             buff_raw += (agitator.get_buff_stats()[0] * agitator.uptime)
+            buff_crit += (agitator.get_buff_stats()[1] * agitator.uptime)
+
+        counterstrike = self.find_buff("counterstrike")
+        if counterstrike:
+            buff_raw += counterstrike.get_buff_stats()[0] * counterstrike.uptime
 
         gore_set_bonus = self.find_buff("gore magala's tyranny")
         if gore_set_bonus and gore_set_bonus.level == 2:
             # gore magala's tyranny buff gives benefits both when uncured and cured. provided uptime is when the player is cleansed, the rest of the time (player is not cleansed) they get less of a buff.
             buff_raw += (gore_set_bonus.get_buff_stats()[2][0] * gore_set_bonus.uptime) + (gore_set_bonus.get_buff_stats()[1][0] * (1 - gore_set_bonus.uptime))
+            buff_crit += (gore_set_bonus.get_buff_stats()[2][1] * gore_set_bonus.uptime)
 
-        # critical chance buff checks
-        # TODO
+        weakness_exploit = self.find_buff("weakness exploit")
+        if weakness_exploit:
+            buff_crit += weakness_exploit.get_buff_stats()[1]
 
-        return buff_raw
+        maximum_might = self.find_buff("maximum might")
+        if maximum_might:
+            buff_crit += maximum_might.get_buff_stats()[1]
+
+        antivirus = self.find_buff("antivirus")
+        if antivirus:
+            buff_crit += (antivirus.get_buff_stats()[1] * antivirus.uptime)
+
+        critical_boost = self.find_buff("critical boost")
+        if critical_boost:
+            avg_dmg_increase = buff_crit * critical_boost.get_buff_stats()[1]
+        else:
+            avg_dmg_increase = buff_crit * .25
+
+        efr = (buff_raw * (1 + avg_dmg_increase)) * 1.32 # white sharpness gives 32% increase after all other buffs are applied.
+
+        return round(efr, 2)
 
 class Buff:
     _SKILLS = {
