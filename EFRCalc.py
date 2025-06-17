@@ -1,6 +1,6 @@
 class Build:
     _BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost" , "offensive guard"]
-    _DEFAULT_BUFF_UPTIME_DICT = {"antivirus": .8, "weakness exploit": 1, "maximum might": 1, "latent power": 0, "agitator": .7, "adrenaline Rush": 0, "counterstrike": .6, "burst": 1, "critical boost": 1 , "offensive guard": 1}
+    _DEFAULT_BUFF_UPTIME_DICT = {"antivirus": .8, "weakness exploit": 1, "maximum might": 1, "latent power": .45, "agitator": .7, "adrenaline Rush": .5, "counterstrike": .6, "burst": 1, "critical boost": 1 , "offensive guard": 1}
         #TODO finish
     _SET_BONUS_LIST = ["gore magala's tyranny"]
     _DEFAULT_SET_BONUS_UPTIME_DICT = {"gore magala's tyranny": .8}
@@ -131,6 +131,10 @@ class Build:
         if counterstrike:
             buff_raw += counterstrike.get_buff_stats()[0] * counterstrike.uptime
 
+        adrenaline_rush = self.find_buff("adrenaline rush")
+        if adrenaline_rush:
+            buff_raw += adrenaline_rush.get_buff_stats()[0] * adrenaline_rush.uptime
+
         gore_set_bonus = self.find_buff("gore magala's tyranny")
         if gore_set_bonus and gore_set_bonus.level == 2:
             # gore magala's tyranny buff gives benefits both when uncured and cured. provided uptime is when the player is cleansed, the rest of the time (player is not cleansed) they get less of a buff.
@@ -147,7 +151,11 @@ class Build:
 
         antivirus = self.find_buff("antivirus")
         if antivirus:
-            buff_crit += (antivirus.get_buff_stats()[1] * antivirus.uptime)
+            buff_crit += antivirus.get_buff_stats()[1] * antivirus.uptime
+
+        latent_power = self.find_buff("latent power")
+        if latent_power:
+            buff_crit += latent_power.get_buff_stats()[1] * latent_power.uptime
 
         critical_boost = self.find_buff("critical boost")
         if critical_boost:
