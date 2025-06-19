@@ -1,6 +1,6 @@
 class Build:
-    _BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost" , "offensive guard"]
-    _DEFAULT_BUFF_UPTIME_DICT = {"antivirus": .8, "weakness exploit": 1, "maximum might": 1, "latent power": .45, "agitator": .7, "adrenaline Rush": .5, "counterstrike": .6, "burst": 1, "critical boost": 1 , "offensive guard": 1}
+    _BUFF_LIST = ["antivirus", "weakness exploit", "maximum might", "latent power", "agitator", "adrenaline Rush", "counterstrike", "burst", "critical boost" , "offensive guard", "critical eye", "attack boost", "peak performance", "foray", "resentment", "ambush"]
+    _DEFAULT_BUFF_UPTIME_DICT = {"antivirus": .8, "weakness exploit": 1, "maximum might": 1, "latent power": .45, "agitator": .7, "adrenaline Rush": .5, "counterstrike": .6, "burst": 1, "critical boost": 1 , "offensive guard": 1, "critical eye": 1, "attack boost": 1, "peak performance": .5, "foray": .15, "resentment": .5, "ambush": .1}
         #TODO finish
     _SET_BONUS_LIST = ["gore magala's tyranny"]
     _DEFAULT_SET_BONUS_UPTIME_DICT = {"gore magala's tyranny": .8}
@@ -118,14 +118,38 @@ class Build:
         if offensive_guard:
             buff_raw *= (1 + (offensive_guard.get_buff_stats()[0] * offensive_guard.uptime))
 
+        attack_boost = self.find_buff("attack boost")
+        if attack_boost:
+            if attack_boost.level <= 3:
+                buff_raw += attack_boost.get_buff_stats()[0] * attack_boost.uptime
+            else:
+                buff_raw += attack_boost.get_buff_stats()[0](self.base_raw) * attack_boost.uptime
+
+        ambush = self.find_buff("ambush")
+        if ambush:
+            buff_raw += ambush.get_buff_stats()[0](self.base_raw) * ambush.uptime
+
         burst = self.find_buff("burst")
         if burst:
-            buff_raw += (burst.get_buff_stats()[0] * burst.uptime)
+            buff_raw += burst.get_buff_stats()[0] * burst.uptime
+
+        peak_performance = self.find_buff("peak performance")
+        if peak_performance:
+            buff_raw += peak_performance.get_buff_stats()[0] * peak_performance.uptime
+
+        resentment = self.find_buff("resentment")
+        if resentment:
+            buff_raw += resentment.get_buff_stats()[0] * resentment.uptime
 
         agitator = self.find_buff("agitator")
         if agitator:
-            buff_raw += (agitator.get_buff_stats()[0] * agitator.uptime)
-            buff_crit += (agitator.get_buff_stats()[1] * agitator.uptime)
+            buff_raw += agitator.get_buff_stats()[0] * agitator.uptime
+            buff_crit += agitator.get_buff_stats()[1] * agitator.uptime
+
+        foray = self.find_buff("foray")
+        if foray:
+            buff_raw += foray.get_buff_stats()[0] * foray.uptime
+            buff_crit += foray.get_buff_stats()[1] * foray.uptime
 
         counterstrike = self.find_buff("counterstrike")
         if counterstrike:
@@ -143,11 +167,15 @@ class Build:
 
         weakness_exploit = self.find_buff("weakness exploit")
         if weakness_exploit:
-            buff_crit += weakness_exploit.get_buff_stats()[1]
+            buff_crit += weakness_exploit.get_buff_stats()[1] * weakness_exploit.uptime
+
+        critical_eye = self.find_buff("critical eye")
+        if critical_eye:
+            buff_crit += critical_eye.get_buff_stats()[1] * critical_eye.uptime
 
         maximum_might = self.find_buff("maximum might")
         if maximum_might:
-            buff_crit += maximum_might.get_buff_stats()[1]
+            buff_crit += maximum_might.get_buff_stats()[1] * maximum_might.uptime
 
         antivirus = self.find_buff("antivirus")
         if antivirus:
@@ -223,6 +251,46 @@ class Buff:
             1: [.05, 0],
             2: [.10, 0],
             3: [.15, 0]
+        },
+        "critical eye": {
+            1: [0, .04],
+            2: [0, .08],
+            3: [0, .12],
+            4: [0, .16],
+            5: [0, .20]
+        }, 
+        "attack boost": {
+            1: [3, 0],
+            2: [5, 0],
+            3: [7, 0],
+            4: [lambda base_raw: base_raw * .02 + 8, 0],
+            5: [lambda base_raw: base_raw * .04 + 9, 0] # attack boost 4 and 5 is a percentage buff based off of base_raw
+        },
+        "peak performance": {
+            1: [3, 0],
+            2: [6, 0],
+            3: [10, 0],
+            4: [15, 0],
+            5: [20, 0]
+        },
+        "foray": {
+            1: [6, 0],
+            2: [8, .05],
+            3: [10, .1],
+            4: [12, .15],
+            5: [15, .20]
+        },
+        "resentment": {
+            1: [5, 0],
+            2: [10, 0],
+            3: [15, 0],
+            4: [20, 0],
+            5: [25, 0]
+        }, 
+        "ambush": {
+            1: [lambda base_raw: base_raw * .05, 0],
+            2: [lambda base_raw: base_raw * .10, 0],
+            3: [lambda base_raw: base_raw * .15, 0] # ambush is a percentage buff based off of base_raw
         }
     }
 
