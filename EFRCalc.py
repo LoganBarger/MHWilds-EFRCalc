@@ -12,17 +12,17 @@ class Build:
     
     _DEFAULT_BUFF_UPTIME_DICT = {
         "antivirus": .8, 
-        "weakness exploit": 1, 
-        "maximum might": 1, 
+        "weakness exploit": 1.0, 
+        "maximum might": 1.0, 
         "latent power": .45, 
         "agitator": .7, 
         "adrenaline Rush": .5, 
         "counterstrike": .6, 
-        "burst": 1, 
-        "critical boost": 1 , 
-        "offensive guard": 1, 
-        "critical eye": 1, 
-        "attack boost": 1, 
+        "burst": 1.0, 
+        "critical boost": 1.0, 
+        "offensive guard": 1.0, 
+        "critical eye": 1.0, 
+        "attack boost": 1.0, 
         "peak performance": .5, 
         "foray": .15, 
         "resentment": .5, 
@@ -60,7 +60,20 @@ class Build:
     def buffs(self):
         return self._buffs
     
-    #TODO add buff method
+    def add_buff(self, name, level, uptime, is_set_bonus=False):
+        max_lvl = Buff.max_level(name)
+        if not (0 <= level <= max_lvl):
+            raise ValueError(f"{name} level must be between 0 and {max_lvl}")
+        
+        if not (0.0 <= uptime <= 1.0):
+            raise ValueError(f"{name} uptime must be a decimal between 0.0 and 1.0")
+        
+        buff = Buff(self.weapon, name, level, uptime)
+        if is_set_bonus:
+            self.set_bonuses.append(buff)
+        else:
+            self.buffs.append(buff)
+        return
     
     @property
     def set_bonuses(self):
@@ -98,46 +111,78 @@ class Build:
 
     def find_buff(self, name):
         return next((buff for buff in (self.buffs + self.set_bonuses) if buff.name == name), None)
-
-    def validate_input(self, prompt, setter_func):
+    
+    def user_prompt(self, prompt, *, input_type, can_be_none=False, min_val=None, max_val=None, choices=None, skill=None):
+        """
+        input_type: "string", "int", "float", or "buff"
+        - For string: provide choices list
+        - For numeric: provide min_val and max_val
+        - For buff_lvl: provide skill name
+        """
         while True:
-            try: 
-                user_input = input(prompt)
-                setter_func(user_input)
-                break
-            except (ValueError, TypeError) as e:
-                print(f"invalid input: {e}")
+            raw = input(prompt).strip()
+
+            # Blank handling
+            if not raw:
+                if can_be_none:
+                    return None
+                # sometimes it is valid for the user to leave a prompt answer blank. If this flag is true and the user leaves a blank it will return None.
+
+            # Parse
+            try:
+                if input_type in ("int", "buff"):
+                    val = int(raw)
+                elif input_type == "float":
+                    val = float(raw)
+                else:  # string
+                    val = raw.lower()
+            except ValueError:
+                type_name = {"int": "whole number", "buff": "whole number", "float": "decimal number"}[input_type]
+                print(f"Invalid input: input must be a {type_name}")
+                continue
+
+            # Validate
+            error = None
+
+            if input_type == "string":
+                if choices and val not in choices:
+                    error = f"must be one of: {', '.join(choices)}"
+
+            elif input_type in ("int", "float"):
+                if (min_val is not None and val < min_val) or (max_val is not None and val > max_val):
+                    error = f"must be between {min_val} and {max_val}"
+
+            elif input_type == "buff":
+                max_lvl = Buff.max_level(skill)
+                if not (0 <= val <= max_lvl):
+                    error = f"{skill} level must be between 0 and {max_lvl}"
+
+            if error:
+                print(f"Invalid input: {error}")
+                continue
+            
+            return val
 
     def prompt_build(self):
-            self.validate_input("Which weapon are you using: ", lambda x: setattr(self, "weapon", x))
-            self.validate_input("What is your base raw attack: ", lambda x: setattr(self, "base_raw", x))
-            self.validate_input("What is your base crit chance percentage: ", lambda x: setattr(self, "base_crit", x))
+            self.weapon = self.user_prompt("Which weapon are you using: ", input_type="string", choices=self._WEAPON_LIST)
+            self.base_raw = self.user_prompt("What is your base raw attack: ", input_type="int", min_val=1, max_val=500)
+            self.base_crit = self.user_prompt("What is your base crit chance percentage: ", input_type="float", min_val=0.0, max_val=1.0)
 
             print("For the following skills, enter the level your build contains (leave blank if you don't have the skill) and the expected uptime of the skill as a decimal percentage: ")
 
             # Handle regular buffs
 
-            for skill in self._BUFF_LIST:
-                skill_input_str = input(f"{skill}: ").strip()
-                uptime_input_str = input(f"{skill} uptime (leave blank for default): ").strip()
+            for skill in self._BUFF_LIST + self._SET_BONUS_LIST:
+                skill_input = self.user_prompt(f"{skill}: ", input_type="buff", can_be_none=True, skill=skill)
+                uptime_input = self.user_prompt(f"{skill} uptime (leave blank for default): ", input_type="float", can_be_none=True, min_val=0.0, max_val=1.0)
 
-                skill_input = int(skill_input_str) if skill_input_str else 0
-                uptime_input = float(uptime_input_str) if uptime_input_str else None
-
-                if skill_input != 0:
-                    uptime = uptime_input if uptime_input is not None else self._DEFAULT_BUFF_UPTIME_DICT[skill]
-                    self._buffs.append(Buff(self._weapon, skill, skill_input, uptime))
-
-            for skill in self._SET_BONUS_LIST:
-                skill_input_str = input(skill + ": ").strip()
-                uptime_input = input(skill + " uptime (leave blank if using default uptimes): ").strip()
-
-                skill_input = int(skill_input_str) if skill_input_str else 0
-                uptime_input = float(uptime_input_str) if uptime_input_str else None
-
-                if skill_input != 0:
-                    uptime = uptime_input if uptime_input is not None else self._DEFAULT_SET_BONUS_UPTIME_DICT[skill]
-                    self._set_bonuses.append(Buff(self._weapon, skill, skill_input, uptime))
+                if skill_input:
+                    if skill in self._BUFF_LIST:
+                        uptime = uptime_input if uptime_input is not None else self._DEFAULT_BUFF_UPTIME_DICT[skill]
+                        self.add_buff(skill, skill_input, uptime)
+                    else:
+                        uptime = uptime_input if uptime_input is not None else self._DEFAULT_SET_BONUS_UPTIME_DICT[skill]
+                        self.add_buff(skill, skill_input, uptime, True)
     
     def calculate_efr(self):
         buff_raw = self.base_raw
@@ -414,7 +459,7 @@ class Buff:
                 return self._BURST_WEAPONS["dual blades"][self.level]
             case "light bowgun" | "heavy bowgun" | "bow":
                 return self._BURST_WEAPONS["ranged weapons"][self.level]
-            case "long sword" | "sword and shield" | "hammer" | "lance" | "gunlance" | "switch axe" | "charge blade" | "insect glaive":
+            case "longsword" | "sword and shield" | "hammer" | "lance" | "gunlance" | "switch axe" | "charge blade" | "insect glaive":
                 return self._BURST_WEAPONS["other weapons"][self.level]
             
     def get_gore_set_stats(self):
@@ -423,6 +468,15 @@ class Buff:
                 return self._GORE_STATS[1]
             case 2:
                 return self._GORE_STATS[2]
+            
+    @classmethod
+    def max_level(cls, skill):
+        if skill in cls._SKILLS:
+            return max(cls._SKILLS[skill])
+        elif skill == "burst":
+            return 5
+        elif skill == "gore magala's tyranny":
+            return 2
             
 build = Build()
 build.prompt_build()
